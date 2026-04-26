@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
+    <style>
+        :root { --accent: #f8a5c2; --bg: #fff0f5; --bar-bg: #dfe6e9; --dismiss: #b2bec3; }
+        body { background: var(--bg); display: flex; flex-direction: column; align-items: center; font-family: 'Segoe UI', sans-serif; color: #596275; margin: 0; padding: 10px; box-sizing: border-box; }
+        header { width: 95%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; padding: 10px 0; }
+        #menu-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+
+        /* ── Login Screen ── */
+        #login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 95%; max-width: 400px; background: white; border-radius: 24px; padding: 30px 24px; box-shadow: 0 5px 20px rgba(248,165,194,0.18); margin-top: 20px; }
+        #login-screen h2 { color: var(--accent); margin: 0 0 6px; font-size: 1.3em; }
+        #login-screen p { font-size: 0.78em; color: #a5b1c2; margin: 0 0 20px; text-align: center; }
+        .login-input { width: 100%; box-sizing: border-box; border: 1.5px solid #eee; border-radius: 10px; padding: 10px 14px; font-size: 0.9em; font-family: inherit; color: #596275; background: #fafafa; outline: none; margin-bottom: 10px; }
+        .login-input:focus { border-color: var(--accent); background: white; }
+        .login-btn { width: 100%; padding: 11px; background: var(--accent); color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 0.9em; cursor: pointer; font-family: inherit; margin-top: 4px; }
+        .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        #login-toggle { margin-top: 12px; font-size: 0.75em; color: #a5b1c2; cursor: pointer; text-decoration: underline; }
+        #login-error { font-size: 0.75em; color: #ff7675; margin-top: 6px; min-height: 16px; text-align: center; }
+        #login-mode-label { font-weight: bold; font-size: 1em; color: #596275; margin-bottom: 16px; }
+
+        /* ── Main App ── */
+        #app { display: none; width: 100%; flex-direction: column; align-items: center; }
+        #task-panel { display: none; width: 95%; max-width: 400px; background: white; border-radius: 20px; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.07); overflow: hidden; }
+        #task-panel-header { background: var(--accent); color: white; padding: 12px 16px; font-weight: bold; font-size: 0.88em; display: flex; justify-content: space-between; align-items: center; }
+        #task-panel-header button { background: none; border: none; color: white; font-size: 1.1rem; cursor: pointer; }
+        .tp-body { padding: 14px 16px 16px; }
+        .tp-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
+        .tp-label { font-size: 0.68em; font-weight: bold; color: #a5b1c2; letter-spacing: 0.05em; width: 100%; margin-bottom: 2px; }
+        .tp-input { flex: 1; min-width: 0; border: 1.5px solid #eee; border-radius: 8px; padding: 7px 10px; font-size: 0.8em; color: #596275; font-family: inherit; outline: none; background: #fafafa; box-sizing: border-box; }
+        .tp-input:focus { border-color: var(--accent); background: white; }
+        select.tp-input { cursor: pointer; }
+        .tp-days { display: flex; gap: 5px; flex-wrap: wrap; }
+        .tp-day { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid #eee; background: #fafafa; font-size: 0.68em; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #a5b1c2; user-select: none; transition: all 0.12s; }
+        .tp-day.on { background: var(--accent); border-color: var(--accent); color: white; }
+        .tp-add { width: 100%; padding: 10px; background: var(--accent); color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 0.85em; cursor: pointer; margin-top: 2px; font-family: inherit; }
+        .tp-divider { border: none; border-top: 1px solid #f0f0f0; margin: 10px 0; }
+        .ct-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f5f5f5; gap: 8px; }
+        .ct-item:last-child { border-bottom: none; }
+        .ct-info { flex: 1; min-width: 0; }
+        .ct-name { font-size: 0.82em; font-weight: 600; color: #596275; }
+        .ct-meta { font-size: 0.68em; color: #a5b1c2; margin-top: 1px; }
+        .ct-btns { display: flex; gap: 4px; flex-shrink: 0; }
+        .btn-edit { background: #f0f0f0; color: #596275; border: none; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 0.8em; }
+        .btn-dupe { background: #e8f4fd; color: #5dade2; border: none; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 0.8em; }
+        .ct-edit-form { padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+        .ct-edit-form:last-child { border-bottom: none; }
+        .ct-edit-row { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
+        .btn-save { background: var(--accent); color: white; border: none; padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 0.8em; font-weight: bold; font-family: inherit; }
+        .btn-cancel { background: #f0f0f0; color: #596275; border: none; padding: 7px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8em; font-family: inherit; }
+        #hud, #checklist { width: 95%; max-width: 400px; background: white; padding: 15px; border-radius: 20px; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .stat-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .stat-label { width: 40px; font-weight: bold; font-size: 0.8em; }
+        .bar-container { flex-grow: 1; height: 10px; background: var(--bar-bg); border-radius: 5px; overflow: hidden; }
+        .bar-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.5s; }
+        .rank { width: 25px; font-weight: bold; font-size: 0.9em; text-align: center; color: var(--accent); }
+        #agnes-wrap { display: flex; flex-direction: column; align-items: center; margin-bottom: 15px; }
+        #status-box { width: min(364px, 95vw); background: white; border: 2px solid var(--accent); border-bottom: none; border-radius: 16px 16px 0 0; padding: 8px 12px; box-sizing: border-box; font-size: 0.72em; color: #596275; line-height: 1.4; text-align: center; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+        #status-text { transition: opacity 0.4s ease; opacity: 1; }
+        #game-container { border: 2px solid var(--accent); border-radius: 0 0 24px 24px; border-top: none; box-shadow: 0 8px 20px rgba(248,165,194,0.15); background: #fff; width: min(360px, calc(95vw - 4px)); height: 180px; overflow: hidden; cursor: pointer; }
+        .task-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; gap: 6px; }
+        .task-item.task-late { background: #fff8f8; border-radius: 8px; padding: 10px 8px; border-left: 3px solid #ff7675; }
+        .task-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+        .task-name { font-weight: 600; font-size: 0.85em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .task-meta { display: flex; gap: 8px; flex-wrap: wrap; }
+        .task-stat { font-size: 0.7em; color: #a5b1c2; font-weight: bold; }
+        .task-time { font-size: 0.7em; color: var(--accent); font-weight: bold; }
+        .task-time.late { color: #ff7675; }
+        .btn-group { display: flex; gap: 5px; flex-shrink: 0; }
+        .btn-check { background: var(--accent); color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.85em; }
+        .btn-dismiss { background: var(--dismiss); color: white; border: none; padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 0.7em; }
+        .btn-del { background: #ff7675; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75em; }
+        #clock { font-size: 0.9em; font-weight: bold; color: #f8a5c2; margin-bottom: 5px; text-align: center; }
+        .all-done { text-align: center; padding: 20px; color: var(--accent); font-weight: bold; font-size: 0.9em; }
+        input.tp-input, select.tp-input { -webkit-appearance: none; appearance: none; }
+        input[type="time"].tp-input { min-width: 0; }
+
+        /* Core task edit button in checklist */
+        .btn-core-edit { background: #f0f0f0; color: #596275; border: none; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 0.75em; }
+        .core-edit-panel { background: #fafafa; border-radius: 10px; padding: 10px 12px; margin: 6px 0; border: 1px solid #eee; }
+        .core-edit-panel .ct-edit-row { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
+
+        /* Sync indicator */
+        #sync-status { font-size: 0.65em; color: #a5b1c2; text-align: center; margin-bottom: 4px; min-height: 14px; }
+        #sync-status.syncing { color: #f8a5c2; }
+        #sync-status.error { color: #ff7675; }
+
+        /* Menu tabs */
+        .tp-tabs { display: flex; gap: 0; margin-bottom: 14px; border-radius: 10px; overflow: hidden; border: 1.5px solid #eee; }
+        .tp-tab { flex: 1; padding: 8px; font-size: 0.75em; font-weight: bold; text-align: center; cursor: pointer; background: #fafafa; color: #a5b1c2; border: none; font-family: inherit; }
+        .tp-tab.active { background: var(--accent); color: white; }
+
+        .tp-section { display: none; }
+        .tp-section.active { display: block; }
+
+        /* logout */
+        #logout-btn { font-size: 0.7em; color: #a5b1c2; background: none; border: none; cursor: pointer; text-decoration: underline; padding: 0; font-family: inherit; }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+    <h2>🌸 Daily Life With Agnes</h2>
+    <p>Sign in to keep your progress safe!</p>
+    <div id="login-mode-label">Sign In</div>
+    <input class="login-input" id="login-username" placeholder="Username" autocomplete="username">
+    <input class="login-input" id="login-pin" placeholder="PIN (4 digits)" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password">
+    <div id="login-error"></div>
+    <button class="login-btn" id="login-submit-btn" onclick="submitLogin()">Let's Go! 🌸</button>
+    <div id="login-toggle" onclick="toggleLoginMode()">Don't have an account? Create one!</div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+    <header>
+        <div style="display:flex;flex-direction:column;">
+            <h3 style="margin:0">Daily Life With Agnes</h3>
+            <span id="welcome-name" style="font-size:0.72em;color:#a5b1c2;"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+            <button id="logout-btn" onclick="logout()">Sign out</button>
+            <button id="menu-btn" onclick="toggleMenu()">⚙️</button>
+        </div>
+    </header>
+    <div id="sync-status"></div>
+    <div id="clock">Loading time...</div>
+
+    <div id="task-panel">
+        <div id="task-panel-header">
+            <span>✏️ Manage Tasks</span>
+            <button onclick="toggleMenu()">✕</button>
+        </div>
+        <div class="tp-body">
+            <div class="tp-tabs">
+                <button class="tp-tab active" onclick="switchTab('custom')">Custom Tasks</button>
+                <button class="tp-tab" onclick="switchTab('core')">Edit Core Tasks</button>
+            </div>
+
+            <!-- Custom Tasks Tab -->
+            <div class="tp-section active" id="tab-custom">
+                <div class="tp-row">
+                    <input class="tp-input" id="new-task-name" placeholder="Task name…" style="flex:2">
+                    <select class="tp-input" id="new-task-type" style="flex:1">
+                        <option value="power">💪 Power</option>
+                        <option value="stamina">✨ Stamina</option>
+                        <option value="guts">🔥 Guts</option>
+                        <option value="wit">📚 Wit</option>
+                    </select>
+                </div>
+                <div class="tp-row">
+                    <span class="tp-label">TIME WINDOW (optional)</span>
+                    <input class="tp-input" id="new-task-from" type="time" style="flex:1">
+                    <span style="font-size:0.8em;color:#b2bec3;padding:0 2px">–</span>
+                    <input class="tp-input" id="new-task-to" type="time" style="flex:1">
+                </div>
+                <div class="tp-row" style="flex-direction:column;align-items:flex-start;">
+                    <span class="tp-label">REPEAT ON</span>
+                    <div class="tp-days" id="new-task-days">
+                        <div class="tp-day" data-day="0" onclick="this.classList.toggle('on')">Su</div>
+                        <div class="tp-day" data-day="1" onclick="this.classList.toggle('on')">Mo</div>
+                        <div class="tp-day" data-day="2" onclick="this.classList.toggle('on')">Tu</div>
+                        <div class="tp-day" data-day="3" onclick="this.classList.toggle('on')">We</div>
+                        <div class="tp-day" data-day="4" onclick="this.classList.toggle('on')">Th</div>
+                        <div class="tp-day" data-day="5" onclick="this.classList.toggle('on')">Fr</div>
+                        <div class="tp-day" data-day="6" onclick="this.classList.toggle('on')">Sa</div>
+                    </div>
+                </div>
+                <button class="tp-add" onclick="addCustomTask()">+ Add Task</button>
+                <div id="custom-task-list"></div>
+            </div>
+
+            <!-- Core Tasks Tab -->
+            <div class="tp-section" id="tab-core">
+                <p style="font-size:0.75em;color:#a5b1c2;margin:0 0 12px;">Edit the name, time window, and days for non-essential tasks.</p>
+                <div id="core-task-edit-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="hud">
+        <div class="stat-row"><div class="stat-label">Pwr</div><div class="bar-container"><div id="bar-power" class="bar-fill"></div></div><div id="rank-power" class="rank">F</div></div>
+        <div class="stat-row"><div class="stat-label">Stm</div><div class="bar-container"><div id="bar-stamina" class="bar-fill"></div></div><div id="rank-stamina" class="rank">F</div></div>
+        <div class="stat-row"><div class="stat-label">Gts</div><div class="bar-container"><div id="bar-guts" class="bar-fill"></div></div><div id="rank-guts" class="rank">F</div></div>
+        <div class="stat-row"><div class="stat-label">Wit</div><div class="bar-container"><div id="bar-wit" class="bar-fill"></div></div><div id="rank-wit" class="rank">F</div></div>
+    </div>
+
+    <div id="agnes-wrap">
+        <div id="status-box"><span id="status-text">Agnes is here! 🌸</span></div>
+        <div id="game-container"></div>
+    </div>
+
+    <div id="checklist">
+        <h3>Today's Schedule</h3>
+        <div id="task-list"></div>
+    </div>
+</div>
+
+<script>
+// ── Supabase config ───────────────────────────────────────────────────────────
+const SUPA_URL  = 'https://iusspgrnigizjsvkpiug.supabase.co';
+const SUPA_KEY  = 'sb_publishable_Ad0oD2l3laFTst4tG0qw3A_2k7Fwa36';
+
+async function supaFetch(path, method='GET', body=null) {
+    const opts = {
+        method,
+        headers: {
+            'apikey': SUPA_KEY,
+            'Authorization': 'Bearer ' + SUPA_KEY,
+            'Content-Type': 'application/json',
+            'Prefer': method === 'POST' ? 'return=representation' : ''
+        }
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(SUPA_URL + '/rest/v1/' + path, opts);
+    if (!res.ok) {
+        const err = await res.text();
+        throw new Error(err);
+    }
+    return res.status === 204 ? null : res.json();
+}
+
+// ── Simple PIN hash (not cryptographic, just obfuscation) ─────────────────────
+function hashPin(username, pin) {
+    let h = 0;
+    const str = username.toLowerCase() + ':' + pin + ':agnes-salt-2025';
+    for (let i = 0; i < str.length; i++) {
+        h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+    }
+    return 'ph_' + Math.abs(h).toString(36);
+}
+
+// ── Login state ───────────────────────────────────────────────────────────────
+let currentUser = null;  // { id, username }
+let loginIsRegister = false;
+
+function toggleLoginMode() {
+    loginIsRegister = !loginIsRegister;
+    document.getElementById('login-mode-label').textContent = loginIsRegister ? 'Create Account' : 'Sign In';
+    document.getElementById('login-toggle').textContent = loginIsRegister ? 'Already have an account? Sign in' : "Don't have an account? Create one!";
+    document.getElementById('login-submit-btn').textContent = loginIsRegister ? 'Create Account 🌸' : "Let's Go! 🌸";
+    document.getElementById('login-error').textContent = '';
+}
+
+async function submitLogin() {
+    const username = document.getElementById('login-username').value.trim().toLowerCase();
+    const pin      = document.getElementById('login-pin').value.trim();
+    const errEl    = document.getElementById('login-error');
+    errEl.textContent = '';
+    if (!username || pin.length < 4) { errEl.textContent = 'Please enter a username and 4-digit PIN.'; return; }
+    const btn = document.getElementById('login-submit-btn');
+    btn.disabled = true;
+    btn.textContent = '...';
+    try {
+        const rows = await supaFetch(`agnes_saves?username=eq.${encodeURIComponent(username)}&select=id,username,pin_hash,stats,history,dismissed,custom_tasks,core_task_overrides`);
+        if (loginIsRegister) {
+            if (rows.length > 0) { errEl.textContent = 'That username is already taken!'; return; }
+            const ph = hashPin(username, pin);
+            const created = await supaFetch('agnes_saves', 'POST', { username, pin_hash: ph, stats: {power:0,stamina:0,guts:0,wit:0}, history: {}, dismissed: {}, custom_tasks: [], core_task_overrides: {} });
+            currentUser = { id: created[0].id, username };
+            loadSaveData(created[0]);
+        } else {
+            if (rows.length === 0) { errEl.textContent = "Hmm, can't find that account!"; return; }
+            const row = rows[0];
+            if (row.pin_hash !== hashPin(username, pin)) { errEl.textContent = 'Wrong PIN! Try again 🌸'; return; }
+            currentUser = { id: row.id, username };
+            loadSaveData(row);
+        }
+        showApp();
+    } catch(e) {
+        errEl.textContent = 'Something went wrong: ' + e.message;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = loginIsRegister ? 'Create Account 🌸' : "Let's Go! 🌸";
+    }
+}
+
+function loadSaveData(row) {
+    stats             = row.stats             || {power:0,stamina:0,guts:0,wit:0};
+    history           = row.history           || {};
+    dismissed         = row.dismissed         || {};
+    customTasksRaw    = row.custom_tasks       || [];
+    coreTaskOverrides = row.core_task_overrides || {};
+    customTasks       = hydrateCustomTasks(customTasksRaw);
+}
+
+function showApp() {
+    document.getElementById('login-screen').style.display = 'none';
+    const app = document.getElementById('app');
+    app.style.display = 'flex';
+    document.getElementById('welcome-name').textContent = 'Hi, ' + currentUser.username + '! 🌸';
+    updateUI();
+    if (!gameBooted) bootGame();
+}
+
+function logout() {
+    currentUser = null;
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('login-username').value = '';
+    document.getElementById('login-pin').value = '';
+    document.getElementById('login-error').textContent = '';
+}
+
+// ── Cloud save ────────────────────────────────────────────────────────────────
+let saveDebounce = null;
+function scheduleSave() {
+    if (saveDebounce) clearTimeout(saveDebounce);
+    saveDebounce = setTimeout(cloudSave, 800);
+}
+
+async function cloudSave() {
+    if (!currentUser) return;
+    setSyncStatus('syncing', 'Saving… 🌸');
+    try {
+        await supaFetch(
+            `agnes_saves?id=eq.${currentUser.id}`,
+            'PATCH',
+            {
+                stats,
+                history,
+                dismissed,
+                custom_tasks: customTasksRaw,
+                core_task_overrides: coreTaskOverrides,
+                updated_at: new Date().toISOString()
+            }
+        );
+        setSyncStatus('ok', '');
+    } catch(e) {
+        setSyncStatus('error', 'Save failed — will retry');
+        saveDebounce = setTimeout(cloudSave, 5000);
+    }
+}
+
+function setSyncStatus(state, msg) {
+    const el = document.getElementById('sync-status');
+    el.className = state === 'syncing' ? 'syncing' : state === 'error' ? 'error' : '';
+    el.textContent = msg;
+}
+
+// ── Data ──────────────────────────────────────────────────────────────────────
+let stats             = {power:0,stamina:0,guts:0,wit:0};
+let history           = {};
+let dismissed         = {};
+let customTasksRaw    = [];
+let coreTaskOverrides = {};  // { taskId: { name, fromH, toH, days, timeLabel } }
+
+function hydrateCustomTasks(raw) {
+    return raw.map(t => Object.assign({}, t, {
+        anim: t.anim || 'cheer',
+        check: (h) => {
+            if (t.fromH !== undefined && t.toH !== undefined) {
+                if (t.fromH <= t.toH) return h >= t.fromH && h < t.toH;
+                return h >= t.fromH || h < t.toH;
+            }
+            return true;
+        }
+    }));
+}
+let customTasks = [];
+
+// ── Fortnightly Friday helper ─────────────────────────────────────────────────
+// Reference date: Friday 9 May 2025
+const INJECTION_REF = new Date(2025, 4, 9); // May 9 2025
+
+function isInjectionFriday() {
+    const now = new Date();
+    if (now.getDay() !== 5) return false; // must be Friday
+    const msPerDay = 86400000;
+    const diffDays = Math.round((now - INJECTION_REF) / msPerDay);
+    return diffDays >= 0 && diffDays % 14 === 0;
+}
+
+// ── Core tasks ────────────────────────────────────────────────────────────────
+const coreTasks = [
+    { id:'Stretch',   name:'Morning Stretch',             type:'power',   anim:'cheer',      timeLabel:'Until 10AM',  isEssential:true,  check:h=>h<10 },
+    { id:'Breakfast', name:'Have Breakfast',              type:'stamina', anim:'eating',     timeLabel:'Until 12PM',  isEssential:true,  check:h=>h<12 },
+    { id:'Tablet',    name:'Take Experimental Tablet',    type:'guts',    anim:'giggle',     timeLabel:'Before 12PM', isEssential:true,  isTimeSensitive:true, idealEnd:12, check:h=>h<24 },
+    { id:'Water',     name:'Drink Glass Of Water',        type:'stamina', anim:'snack',      timeLabel:'Every 2hrs',  isEssential:true,  check:h=>h>=8&&h<24&&h%2===0 },
+    { id:'Lunch',     name:'Eat Lunch',                   type:'stamina', anim:'eating',     timeLabel:'12PM - 3PM',  isEssential:true,  check:h=>h>=12&&h<15 },
+    { id:'Snack',     name:'Share A Snack With Agnes',    type:'stamina', anim:'snack',      timeLabel:'3PM - 5PM',   isEssential:false, check:h=>h>=15&&h<17 },
+    { id:'Walk',      name:'Go For A Walk with Agnes',    type:'power',   anim:'super_dash', timeLabel:'After 3PM',   isEssential:false, check:h=>h>=15&&h<19 },
+    { id:'Read',      name:'Read/Study',                  type:'wit',     anim:'sit_down',   timeLabel:'From 5PM',    isEssential:false, check:h=>h>=17 },
+    { id:'Cranes',    name:'Create 3 Paper Cranes',       type:'wit',     anim:'say',        timeLabel:'After 5PM',   isEssential:false, days:[1,3,5,0], check:h=>h>=17 },
+    { id:'Dinner',    name:'Have Dinner With Agnes',      type:'stamina', anim:'eating',     timeLabel:'6PM - 10PM',  isEssential:true,  check:h=>h>=18&&h<22 },
+    { id:'Teeth',     name:'Brush Your Teeth',            type:'guts',    anim:'giggle',     timeLabel:'AM/PM',       isEssential:true,  check:h=>(h>=7&&h<9)||(h>=17&&h<24) },
+    { id:'Tidy',      name:'Tidy Up Room',                type:'power',   anim:'float',      timeLabel:'Wed & Sun',   isEssential:false, days:[0,3], check:h=>h<18 },
+    { id:'Tidy2',     name:'Scrub The Bathroom',          type:'power',   anim:'dash',       timeLabel:'Sun & Wed',   isEssential:false, days:[0,3], check:h=>h<18 },
+    { id:'Shop',      name:'Go Food Shopping With Agnes', type:'power',   anim:'dash',       timeLabel:'Saturdays',   isEssential:false, days:[6],   check:h=>h<20 },
+    { id:'Laundry',   name:'Do Laundry With Agnes',       type:'guts',    anim:'dash',       timeLabel:'Sundays',     isEssential:false, days:[0],   check:h=>h<18 },
+    // Injection — special: visible only 3PM+ on fortnightly Fridays, never auto-dismisses
+    { id:'Injection', name:"Tachyon's Newest Injection",  type:'guts',    anim:'giggle',     timeLabel:'3PM – 5PM',   isEssential:true,  isInjection:true,
+      check: h => isInjectionFriday() && h >= 15 }
+];
+
+function getEffectiveTask(task) {
+    const ov = coreTaskOverrides[task.id];
+    if (!ov) return task;
+    return Object.assign({}, task, {
+        name: ov.name || task.name,
+        timeLabel: ov.timeLabel || task.timeLabel,
+        days: ov.days || task.days,
+        check: (h) => {
+            if (ov.fromH !== undefined && ov.toH !== undefined) {
+                if (ov.fromH <= ov.toH) return h >= ov.fromH && h < ov.toH;
+                return h >= ov.fromH || h < ov.toH;
+            }
+            return task.check(h);
+        }
+    });
+}
+
+// ── Menu ──────────────────────────────────────────────────────────────────────
+let activeTab = 'custom';
+function switchTab(tab) {
+    activeTab = tab;
+    document.querySelectorAll('.tp-tab').forEach((el,i) => el.classList.toggle('active', (i===0&&tab==='custom')||(i===1&&tab==='core')));
+    document.getElementById('tab-custom').classList.toggle('active', tab==='custom');
+    document.getElementById('tab-core').classList.toggle('active', tab==='core');
+    if (tab === 'core') renderCoreTaskEditor();
+}
+
+function toggleMenu() {
+    const panel = document.getElementById('task-panel');
+    const isOpen = panel.style.display === 'block';
+    panel.style.display = isOpen ? 'none' : 'block';
+    if (!isOpen) { renderCustomTasks(); if (activeTab === 'core') renderCoreTaskEditor(); }
+}
+
+// ── Core task editor ──────────────────────────────────────────────────────────
+function renderCoreTaskEditor() {
+    const list = document.getElementById('core-task-edit-list');
+    const editableTasks = coreTasks.filter(t => !t.isEssential && !t.isInjection && t.id !== 'Tablet');
+    const icons = {power:'💪',stamina:'✨',guts:'🔥',wit:'📚'};
+    list.innerHTML = editableTasks.map(task => {
+        const ov = coreTaskOverrides[task.id] || {};
+        const name = ov.name || task.name;
+        const tl = ov.timeLabel || task.timeLabel;
+        const days = ov.days || task.days || [0,1,2,3,4,5,6];
+        return `<div class="ct-item" data-coreid="${task.id}">
+            <div class="ct-info">
+                <div class="ct-name">${name}</div>
+                <div class="ct-meta">${icons[task.type]||''} ${task.type} · ${tl}</div>
+            </div>
+            <div class="ct-btns">
+                <button class="btn-edit" onclick="editCoreTask('${task.id}')">✎</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function editCoreTask(id) {
+    const task = coreTasks.find(t => t.id === id); if (!task) return;
+    const ov = coreTaskOverrides[id] || {};
+    const name = ov.name || task.name;
+    const fromH = ov.fromH !== undefined ? ov.fromH : undefined;
+    const toH   = ov.toH   !== undefined ? ov.toH   : undefined;
+    const days  = ov.days  || task.days  || [0,1,2,3,4,5,6];
+    const fromStr = fromH !== undefined ? String(fromH).padStart(2,'0')+':00' : '';
+    const toStr   = toH   !== undefined ? String(toH).padStart(2,'0')  +':00' : '';
+    const daysHtml = ['Su','Mo','Tu','We','Th','Fr','Sa'].map((d,i) =>
+        `<div class="tp-day${days.includes(i)?' on':''}" data-day="${i}" onclick="this.classList.toggle('on')">${d}</div>`
+    ).join('');
+    const item = document.querySelector(`[data-coreid="${id}"]`);
+    item.outerHTML = `<div class="ct-edit-form" data-coreid="${id}">
+        <div class="ct-edit-row">
+            <input class="tp-input" id="cedit-name-${id}" value="${name}" style="flex:2" placeholder="Task name">
+        </div>
+        <div class="ct-edit-row">
+            <input class="tp-input" id="cedit-from-${id}" type="time" value="${fromStr}" style="flex:1">
+            <span style="font-size:0.8em;color:#b2bec3">–</span>
+            <input class="tp-input" id="cedit-to-${id}" type="time" value="${toStr}" style="flex:1">
+        </div>
+        <div class="ct-edit-row"><div class="tp-days" id="cedit-days-${id}">${daysHtml}</div></div>
+        <div class="ct-edit-row">
+            <button class="btn-save" onclick="saveCoreTask('${id}')">Save</button>
+            <button class="btn-cancel" onclick="renderCoreTaskEditor()">Cancel</button>
+            ${Object.keys(coreTaskOverrides[id]||{}).length ? `<button class="btn-del" onclick="resetCoreTask('${id}')">Reset</button>` : ''}
+        </div>
+    </div>`;
+}
+
+function saveCoreTask(id) {
+    const task = coreTasks.find(t => t.id === id); if (!task) return;
+    const name    = document.getElementById(`cedit-name-${id}`).value.trim();
+    const fromVal = document.getElementById(`cedit-from-${id}`).value;
+    const toVal   = document.getElementById(`cedit-to-${id}`).value;
+    const days    = Array.from(document.querySelectorAll(`#cedit-days-${id} .tp-day.on`)).map(el=>parseInt(el.dataset.day));
+    if (!name || days.length === 0) { alert('Please enter a name and select at least one day.'); return; }
+    const fmt = t => { const [h,m]=t.split(':'); const hr=parseInt(h); return `${hr%12||12}${m!=='00'?':'+m:''}${hr<12?'AM':'PM'}`; };
+    let timeLabel = task.timeLabel, fromH, toH;
+    if (fromVal && toVal) {
+        fromH = parseInt(fromVal.split(':')[0]); toH = parseInt(toVal.split(':')[0]);
+        timeLabel = `${fmt(fromVal)} – ${fmt(toVal)}`;
+    } else if (fromVal) {
+        fromH = parseInt(fromVal.split(':')[0]);
+        timeLabel = `From ${fmt(fromVal)}`;
+    }
+    coreTaskOverrides[id] = { name, days, timeLabel };
+    if (fromH !== undefined) coreTaskOverrides[id].fromH = fromH;
+    if (toH   !== undefined) coreTaskOverrides[id].toH   = toH;
+    scheduleSave();
+    renderCoreTaskEditor();
+    updateUI();
+    setStatus('Task updated! ✨', 2000);
+}
+
+function resetCoreTask(id) {
+    delete coreTaskOverrides[id];
+    scheduleSave();
+    renderCoreTaskEditor();
+    updateUI();
+}
+
+// ── Custom tasks ──────────────────────────────────────────────────────────────
+const STAT_ANIMS = {
+    power:   ['super_dash','dash','cheer'],
+    stamina: ['eating','snack','wave'],
+    guts:    ['giggle','cheer','sudden_stop'],
+    wit:     ['sit_down','say','giggle'],
+};
+function pickAnim(type) {
+    const pool = STAT_ANIMS[type] || ['cheer'];
+    return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function buildRaw(id, name, type, days, fromVal, toVal) {
+    const fmt = t => { const [h,m]=t.split(':'); const hr=parseInt(h); return `${hr%12||12}${m!=='00'?':'+m:''}${hr<12?'AM':'PM'}`; };
+    let timeLabel='Anytime', fromH, toH;
+    if (fromVal && toVal) {
+        fromH=parseInt(fromVal.split(':')[0]); toH=parseInt(toVal.split(':')[0]);
+        timeLabel=`${fmt(fromVal)} – ${fmt(toVal)}`;
+    } else if (fromVal) {
+        fromH=parseInt(fromVal.split(':')[0]);
+        timeLabel=`From ${fmt(fromVal)}`;
+    }
+    const raw = { id, name, type, days, timeLabel, isEssential:false, anim:pickAnim(type) };
+    if (fromH!==undefined) raw.fromH=fromH;
+    if (toH!==undefined)   raw.toH=toH;
+    return raw;
+}
+
+function addCustomTask() {
+    const name=document.getElementById('new-task-name').value.trim();
+    const type=document.getElementById('new-task-type').value;
+    const fromVal=document.getElementById('new-task-from').value;
+    const toVal=document.getElementById('new-task-to').value;
+    const days=Array.from(document.querySelectorAll('#new-task-days .tp-day.on')).map(el=>parseInt(el.dataset.day));
+    if (!name||days.length===0){alert('Please enter a name and select at least one day.');return;}
+    customTasksRaw.push(buildRaw('custom_'+Date.now(),name,type,days,fromVal,toVal));
+    customTasks=hydrateCustomTasks(customTasksRaw);
+    scheduleSave();
+    document.getElementById('new-task-name').value='';
+    document.getElementById('new-task-from').value='';
+    document.getElementById('new-task-to').value='';
+    document.querySelectorAll('#new-task-days .tp-day').forEach(el=>el.classList.remove('on'));
+    renderCustomTasks(); updateUI();
+    setStatus('New task added! 💡',3000);
+}
+
+function deleteCustomTask(id) {
+    customTasksRaw=customTasksRaw.filter(t=>t.id!==id);
+    customTasks=hydrateCustomTasks(customTasksRaw);
+    scheduleSave();
+    renderCustomTasks(); updateUI();
+}
+
+function duplicateCustomTask(id) {
+    const orig=customTasksRaw.find(t=>t.id===id); if(!orig)return;
+    customTasksRaw.push(Object.assign({},orig,{id:'custom_'+Date.now(),name:orig.name+' (copy)'}));
+    customTasks=hydrateCustomTasks(customTasksRaw);
+    scheduleSave();
+    renderCustomTasks(); updateUI();
+    setStatus('Task duplicated! ✌️',2000);
+}
+
+function editCustomTask(id) {
+    const t=customTasksRaw.find(t=>t.id===id); if(!t)return;
+    const item=document.querySelector(`[data-id="${id}"]`); if(!item)return;
+    const fromStr=t.fromH!==undefined?String(t.fromH).padStart(2,'0')+':00':'';
+    const toStr=t.toH!==undefined?String(t.toH).padStart(2,'0')+':00':'';
+    const daysHtml=['Su','Mo','Tu','We','Th','Fr','Sa'].map((d,i)=>
+        `<div class="tp-day${t.days.includes(i)?' on':''}" data-day="${i}" onclick="this.classList.toggle('on')">${d}</div>`
+    ).join('');
+    item.outerHTML=`<div class="ct-edit-form" data-id="${id}">
+        <div class="ct-edit-row">
+            <input class="tp-input" id="edit-name-${id}" value="${t.name}" style="flex:2">
+            <select class="tp-input" id="edit-type-${id}" style="flex:1">
+                <option value="power"${t.type==='power'?' selected':''}>💪 Power</option>
+                <option value="stamina"${t.type==='stamina'?' selected':''}>✨ Stamina</option>
+                <option value="guts"${t.type==='guts'?' selected':''}>🔥 Guts</option>
+                <option value="wit"${t.type==='wit'?' selected':''}>📚 Wit</option>
+            </select>
+        </div>
+        <div class="ct-edit-row">
+            <input class="tp-input" id="edit-from-${id}" type="time" value="${fromStr}" style="flex:1">
+            <span style="font-size:0.8em;color:#b2bec3">–</span>
+            <input class="tp-input" id="edit-to-${id}" type="time" value="${toStr}" style="flex:1">
+        </div>
+        <div class="ct-edit-row"><div class="tp-days" id="edit-days-${id}">${daysHtml}</div></div>
+        <div class="ct-edit-row">
+            <button class="btn-save" onclick="saveCustomTask('${id}')">Save</button>
+            <button class="btn-cancel" onclick="renderCustomTasks()">Cancel</button>
+        </div>
+    </div>`;
+}
+
+function saveCustomTask(id) {
+    const name=document.getElementById(`edit-name-${id}`).value.trim();
+    const type=document.getElementById(`edit-type-${id}`).value;
+    const fromVal=document.getElementById(`edit-from-${id}`).value;
+    const toVal=document.getElementById(`edit-to-${id}`).value;
+    const days=Array.from(document.querySelectorAll(`#edit-days-${id} .tp-day.on`)).map(el=>parseInt(el.dataset.day));
+    if(!name||days.length===0){alert('Please enter a name and select at least one day.');return;}
+    const idx=customTasksRaw.findIndex(t=>t.id===id); if(idx===-1)return;
+    customTasksRaw[idx]=buildRaw(id,name,type,days,fromVal,toVal);
+    customTasks=hydrateCustomTasks(customTasksRaw);
+    scheduleSave();
+    renderCustomTasks(); updateUI();
+    setStatus('Task updated! ✨',2000);
+}
+
+const DAY_NAMES=['Su','Mo','Tu','We','Th','Fr','Sa'];
+function renderCustomTasks() {
+    const list=document.getElementById('custom-task-list');
+    if(!customTasksRaw.length){list.innerHTML='';return;}
+    const icons={power:'💪',stamina:'✨',guts:'🔥',wit:'📚'};
+    list.innerHTML='<hr class="tp-divider">'+customTasksRaw.map(t=>{
+        const dayStr=t.days.map(d=>DAY_NAMES[d]).join(' · ');
+        return `<div class="ct-item" data-id="${t.id}">
+            <div class="ct-info">
+                <div class="ct-name">${t.name}</div>
+                <div class="ct-meta">${icons[t.type]||''} ${t.type} · ${dayStr} · ${t.timeLabel}</div>
+            </div>
+            <div class="ct-btns">
+                <button class="btn-dupe" onclick="duplicateCustomTask('${t.id}')" title="Duplicate">⧉</button>
+                <button class="btn-edit" onclick="editCustomTask('${t.id}')" title="Edit">✎</button>
+                <button class="btn-del"  onclick="deleteCustomTask('${t.id}')" title="Delete">✕</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// ── Injection reminder interval ───────────────────────────────────────────────
+let injectionNagInterval = null;
+
+const INJECTION_NAGS = [
+    "Agnes NEEDS this data on time!! Please do the injection! 🔬",
+    "Hmm... the injection window has passed. Agnes is... disappointed. 😤",
+    "This is for SCIENCE. Late data is bad data!! 🧪",
+    "Agnes is not impressed. The injection should have been done by 5PM! 😤",
+    "...You know Agnes needs timely results. Please do it soon! 🌸",
+];
+let nagIndex = 0;
+
+function startInjectionNag() {
+    if (injectionNagInterval) return;
+    injectionNagInterval = setInterval(() => {
+        setStatus(INJECTION_NAGS[nagIndex % INJECTION_NAGS.length], 6000);
+        nagIndex++;
+    }, 90000); // every 90 seconds
+    // First nag immediately
+    setStatus(INJECTION_NAGS[0], 6000);
+    nagIndex = 1;
+}
+
+function stopInjectionNag() {
+    if (injectionNagInterval) { clearInterval(injectionNagInterval); injectionNagInterval = null; }
+}
+
+const TABLET_NAGS = [
+    "You haven't taken your tablet yet today!! Agnes is watching... 💊",
+    "The tablet, please!! Agnes needs her data on time! 🌸",
+    "Hmm... it's past 12PM. The tablet should have been taken already! 😤",
+    "Agnes is not pleased about the tablet situation. Not pleased at all. 😤",
+];
+let tabletNagIndex = 0;
+let tabletNagInterval = null;
+
+function startTabletNag() {
+    if (tabletNagInterval) return;
+    tabletNagInterval = setInterval(() => {
+        setStatus(TABLET_NAGS[tabletNagIndex % TABLET_NAGS.length], 6000);
+        tabletNagIndex++;
+    }, 90000);
+    setStatus(TABLET_NAGS[0], 6000);
+    tabletNagIndex = 1;
+}
+
+function stopTabletNag() {
+    if (tabletNagInterval) { clearInterval(tabletNagInterval); tabletNagInterval = null; }
+}
+
+// ── UI ────────────────────────────────────────────────────────────────────────
+let _lastVisibleTasks = new Set();
+let _injectionNagging = false;
+let _tabletNagging = false;
+
+function updateUI() {
+    ['power','stamina','guts','wit'].forEach(s=>{
+        const val=stats[s];
+        const bar=document.getElementById(`bar-${s}`); if(bar)bar.style.width=Math.min(val/5,100)+'%';
+        const rank=document.getElementById(`rank-${s}`); if(rank)rank.innerText=['F','E','D','C','B','A','S'][Math.floor(Math.min(val/100,6))];
+    });
+    const h=new Date().getHours(), today=new Date().toDateString(), currentDay=new Date().getDay();
+    const container=document.getElementById('task-list');
+    if (!container) return;
+    container.innerHTML='';
+    const allTasks=[...coreTasks.map(getEffectiveTask),...customTasks];
+    let visibleCount=0;
+    const nowVisible=new Set();
+
+    let shouldNagInjection = false;
+    let shouldNagTablet = false;
+
+    allTasks.forEach(originalTask=>{
+        // get the base task for special flags
+        const baseTask = coreTasks.find(t=>t.id===originalTask.id) || originalTask;
+        const task = originalTask;
+
+        const taskDays=task.days||[0,1,2,3,4,5,6];
+        const eligible=taskDays.includes(currentDay)&&task.check(h);
+        const done=history[task.id]===today;
+        const skipped=dismissed[task.id]===today;
+
+        if(_lastVisibleTasks.has(task.id)&&!eligible&&!done&&!skipped&&!baseTask.isInjection&&!baseTask.isTimeSensitive){
+            setStatus("You missed a task! Better try again next time!", 4000);
+        }
+
+        // Tablet nag: essential, visible all day, but ideal window is before 12PM
+        if (baseTask.isTimeSensitive && !done && !skipped && h >= baseTask.idealEnd) {
+            shouldNagTablet = true;
+        }
+
+        // Injection nag: visible from 3PM, nag after 5PM
+        if (baseTask.isInjection && !done && !skipped && h >= 17) {
+            shouldNagInjection = true;
+        }
+
+        const showTask = eligible && !done && !skipped;
+        if (showTask) {
+            nowVisible.add(task.id); visibleCount++;
+
+            // Determine if task is "late"
+            const isLate = (baseTask.isTimeSensitive && h >= (baseTask.idealEnd || 12)) ||
+                           (baseTask.isInjection && h >= 17);
+
+            const timeClass = isLate ? 'task-time late' : 'task-time';
+            const lateLabel = isLate ? (baseTask.isInjection ? '⚠️ Past window!' : '⚠️ Late!') : (task.timeLabel||'Anytime');
+            const dismissBtn = task.isEssential ? '' : `<button class="btn-dismiss" onclick="dismiss('${task.id}')">Dismiss</button>`;
+
+            container.innerHTML+=`
+                <div class="task-item${isLate?' task-late':''}">
+                    <div class="task-info" onclick="say('Don\\'t forget to ${task.name.toLowerCase()}! ${task.timeLabel}')">
+                        <span class="task-name" style="text-decoration:underline;cursor:pointer">${task.name}</span>
+                        <div class="task-meta">
+                            <span class="task-stat">${task.type.toUpperCase()}</span>
+                            <span class="${timeClass}">${lateLabel}</span>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        ${dismissBtn}
+                        <button class="btn-check" onclick="complete('${task.id}','${task.anim||'cheer'}','${task.type}',${!!baseTask.isInjection},${!!(baseTask.isTimeSensitive)},${h})">Done</button>
+                    </div>
+                </div>`;
+        }
+    });
+
+    _lastVisibleTasks = nowVisible;
+
+    // Manage nag intervals
+    if (shouldNagInjection && !_injectionNagging) { _injectionNagging = true; startInjectionNag(); }
+    if (!shouldNagInjection && _injectionNagging) { _injectionNagging = false; stopInjectionNag(); }
+    if (shouldNagTablet && !_tabletNagging) { _tabletNagging = true; startTabletNag(); }
+    if (!shouldNagTablet && _tabletNagging) { _tabletNagging = false; stopTabletNag(); }
+
+    if(visibleCount===0) container.innerHTML=`<div class="all-done">🌸 All done for today! Great job!</div>`;
+}
+
+function complete(id, anim, type, isInjection, isTimeSensitive, h) {
+    const rankBefore=Math.floor(Math.min((stats[type]||0)/100,6));
+    history[id]=new Date().toDateString();
+    stats[type]=(stats[type]||0)+10;
+    const rankAfter=Math.floor(Math.min(stats[type]/100,6));
+    scheduleSave();
+
+    if(window.cancelCurrent) window.cancelCurrent();
+    if(agnes){agnes.setFlipX(false);agnes.play(anim);}
+
+    // Special completion reactions
+    if (isInjection) {
+        if (h >= 15 && h < 17) {
+            // On time — Agnes is delighted
+            setStatus('Ehehe~ more data for me! 🧪✨', 5000);
+        } else {
+            // Late — firm scolding
+            setStatus("Agnes is not impressed... late data skews results! Do better next time! 😤", 6000);
+        }
+        stopInjectionNag();
+        _injectionNagging = false;
+    } else if (isTimeSensitive) {
+        if (h < 12) {
+            setStatus('Good work taking your tablet on time! 💊🌸', 4000);
+        } else {
+            setStatus("You were late with your tablet... Agnes needs timely data! Please be on time next time! 😤", 6000);
+        }
+        stopTabletNag();
+        _tabletNagging = false;
+    } else if(rankAfter>rankBefore){
+        setStatus(rankUpMessages[type]||'✨ Level up!',5000);
+    } else {
+        setStatus('Good work! 🌸',3000);
+    }
+    updateUI();
+}
+
+function dismiss(id) {
+    dismissed[id]=new Date().toDateString();
+    scheduleSave();
+    setStatus("Okay, skipping that one... 😤",3000);
+    updateUI();
+}
+
+// ── Status ────────────────────────────────────────────────────────────────────
+let statusTimeout=null, boredTimeout=null;
+const defaultMessages=["Agnes is here! 🌸","Ready for today?","What's on the schedule?"];
+const boredMessages=["Agnes is bored... 😴","Hmm... nothing to do?","Agnes is waiting patiently...","Is anyone there...? 🌸"];
+const rankUpMessages={power:"Agnes feels Stronger! 💪",stamina:"Agnes has more energy! ✨",guts:"Agnes is tougher now! 🔥",wit:"Agnes feels Smarter! 📚"};
+
+function setStatus(text, duration) {
+    const el=document.getElementById('status-text'); if(!el)return;
+    el.style.opacity='0';
+    if(statusTimeout) clearTimeout(statusTimeout);
+    setTimeout(()=>{el.textContent=text;el.style.opacity='1';},300);
+    if(duration) statusTimeout=setTimeout(()=>setStatus(defaultMessages[Math.floor(Math.random()*defaultMessages.length)],0),duration);
+    resetBoredTimer();
+}
+function resetBoredTimer() {
+    if(boredTimeout) clearTimeout(boredTimeout);
+    boredTimeout=setTimeout(()=>{
+        setStatus(boredMessages[Math.floor(Math.random()*boredMessages.length)],0);
+        boredTimeout=setInterval(()=>setStatus(boredMessages[Math.floor(Math.random()*boredMessages.length)],0),120000);
+    },300000);
+}
+function say(text) {
+    setStatus(text,4000);
+    if(agnes) agnes.play('say');
+}
+resetBoredTimer();
+
+// ── Clock ─────────────────────────────────────────────────────────────────────
+function updateClock(){const el=document.getElementById('clock');if(el)el.innerText=new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});}
+updateClock();
+setInterval(updateClock,1000);
+setInterval(()=>{updateClock();updateUI();},60000);
+
+// ── Phaser ────────────────────────────────────────────────────────────────────
+let agnes = null;
+let gameBooted = false;
+
+function bootGame() {
+    gameBooted = true;
+    const canvasWidth=Math.min(360,Math.round(window.innerWidth*0.95)-4);
+    const phaserConfig={type:Phaser.AUTO,width:canvasWidth,height:180,transparent:true,parent:'game-container',scene:{preload,create}};
+    new Phaser.Game(phaserConfig);
+}
+
+function preload(){
+    this.load.atlas('agnes','agnes-sprites.png','agnes-sprites-json.json');
+}
+
+function create(){
+    const canvasWidth=Math.min(360,Math.round(window.innerWidth*0.95)-4);
+    agnes=this.add.sprite(Math.round(canvasWidth/2),90,'agnes','agtc001A_00').setScale(1.5).setInteractive();
+
+    this.anims.create({key:'idle1',frames:[{key:'agnes',frame:'agtc001A_00'},{key:'agnes',frame:'agtc001A_01'},{key:'agnes',frame:'agtc001A_02'},{key:'agnes',frame:'agtc100_00'},{key:'agnes',frame:'agtc100_01'},{key:'agnes',frame:'agtc100_02'},{key:'agnes',frame:'agtc100_03'}],frameRate:2,repeat:-1});
+    this.anims.create({key:'eating',frames:['agtc360_06','agtc360_07','agtc360_08','agtc360_09','agtc360_08','agtc360_09','agtc360_08','agtc360_09','agtc360_08','agtc360_09','agtc360_10','agtc360_11','agtc360_12'].map(f=>({key:'agnes',frame:f})),frameRate:4,repeat:0});
+    this.anims.create({key:'walk_left',frames:[{key:'agnes',frame:'agtc101_00'},{key:'agnes',frame:'agtc101_01'},{key:'agnes',frame:'agtc101_02'},{key:'agnes',frame:'agtc101_03'},{key:'agnes',frame:'agtc101_04'},{key:'agnes',frame:'agtc101_05'}],frameRate:6,repeat:-1});
+    this.anims.create({key:'sit_down',frames:[{key:'agnes',frame:'agtc320_00'},{key:'agnes',frame:'agtc320_01'},{key:'agnes',frame:'agtc320_02'},{key:'agnes',frame:'agtc320_03'},{key:'agnes',frame:'agtc320_04'},{key:'agnes',frame:'agtc320_06'},{key:'agnes',frame:'agtc320_04'},{key:'agnes',frame:'agtc320_06'},{key:'agnes',frame:'agtc320_04'},{key:'agnes',frame:'agtc320_06'}],frameRate:2,repeat:0});
+    this.anims.create({key:'dash',frames:['agtc102_00','agtc102_01','agtc102_02','agtc102_03','agtc102_04','agtc102_05'].map(f=>({key:'agnes',frame:f})),frameRate:10,repeat:-1});
+    this.anims.create({key:'super_dash',frames:['agtc110_00','agtc110_01','agtc111_00','agtc111_01','agtc111_02','agtc111_03','agtc111_04','agtc111_05','agtc111_06','agtc112_00','agtc112_01','agtc113_00','agtc113_01'].map(f=>({key:'agnes',frame:f})),frameRate:12,repeat:0});
+    this.anims.create({key:'sudden_stop',frames:[{key:'agnes',frame:'agtc120_00'},{key:'agnes',frame:'agtc120_01'}],frameRate:6,repeat:0});
+    this.anims.create({key:'float',frames:[{key:'agnes',frame:'agtc362_00'},{key:'agnes',frame:'agtc362_01'}],frameRate:4,repeat:-1});
+    this.anims.create({key:'giggle',frames:['agtc500_00','agtc500_01','agtc500_02','agtc500_03'].map(f=>({key:'agnes',frame:f})),frameRate:6,repeat:0});
+    this.anims.create({key:'snack',frames:['agtc510_00','agtc510_01','agtc510_02','agtc510_03','agtc510_04','agtc510_05'].map(f=>({key:'agnes',frame:f})),frameRate:4,repeat:0});
+    this.anims.create({key:'wave',frames:[{key:'agnes',frame:'agtc540_00'},{key:'agnes',frame:'agtc540_01'}],frameRate:4,repeat:5});
+    this.anims.create({key:'cheer',frames:['agtc602_00','agtc602_01','agtc602_02'].map(f=>({key:'agnes',frame:f})),frameRate:4,repeat:3});
+    this.anims.create({key:'say',frames:['agtc730_00','agtc730_01','agtc730_02','agtc730_03'].map(f=>({key:'agnes',frame:f})),frameRate:4,repeat:0});
+
+    let agnesVX=0,agnesVY=0,moveMode='none',floatAngle=0,wallBouncing=false,isInterrupted=false;
+    const scene=this;
+    const HOME_X=Math.round(canvasWidth/2), HOME_Y=90;
+    const WALL_L=20, WALL_R=canvasWidth-20, SDASH_L=10, SDASH_R=canvasWidth-10;
+
+    const idleQuotes=[
+        "Life is an experiment, and we its guinea pigs.",
+        "Don't worry about it~",
+        "The worst that could happen is your legs would start glowing green for a while!",
+        "Isn't that a cute side effect?",
+        "Witness me. Watch me run. Burn the sight into your eyes.",
+        "Time for science!",
+        "Want to be my test subject next?",
+        "lets run together next time!",
+    ];
+    let lastQuoteIndex=-1;
+    const maybeQuote=()=>{
+        if(Math.random()<0.2){
+            let idx; do{idx=Math.floor(Math.random()*idleQuotes.length);}while(idx===lastQuoteIndex);
+            lastQuoteIndex=idx;
+            setStatus(idleQuotes[idx],5000);
+        }
+    };
+
+    const weightedPool=['idle1','idle1','idle1','idle1','idle1','idle1','walk_left','dash','super_dash','float','giggle','wave','cheer'];
+    let idleTimer=null;
+    const scheduleNext=(delayMs)=>{
+        if(idleTimer)idleTimer.remove(false);
+        isInterrupted=false;
+        idleTimer=scene.time.delayedCall(delayMs,playRandomIdle);
+    };
+    const cancelCurrent=()=>{
+        isInterrupted=true;
+        if(idleTimer){idleTimer.remove(false);idleTimer=null;}
+    };
+    window.cancelCurrent=cancelCurrent;
+
+    const scheduleNextQuote=()=>{
+        scene.time.delayedCall(Phaser.Math.Between(25000,45000),()=>{maybeQuote();scheduleNextQuote();});
+    };
+    scheduleNextQuote();
+
+    const stopMoving=()=>{agnesVX=0;agnesVY=0;moveMode='none';wallBouncing=false;};
+    const parkIdle=()=>{stopMoving();agnes.setFlipX(false);agnes.play('idle1');};
+    const walkHome=(onArrival)=>{
+        if(Math.abs(agnes.x-HOME_X)<10){agnes.x=HOME_X;agnes.y=HOME_Y;onArrival();return;}
+        const goRight=agnes.x<HOME_X;
+        agnes.setFlipX(goRight);agnesVX=goRight?60:-60;moveMode='returning';
+        agnes.play('walk_left');scene._walkHomeCallback=onArrival;
+    };
+
+    const playRandomIdle=()=>{
+        isInterrupted=false;
+        const key=weightedPool[Math.floor(Math.random()*weightedPool.length)];
+        stopMoving();
+        if(key==='walk_left'){
+            const goRight=Math.random()>0.5;
+            agnes.setFlipX(goRight);agnesVX=goRight?50:-50;moveMode='walk';agnes.play('walk_left');
+            scene.time.delayedCall(Phaser.Math.Between(2000,4000),()=>{
+                if(isInterrupted||moveMode!=='walk')return;
+                stopMoving();walkHome(()=>{if(isInterrupted)return;parkIdle();scheduleNext(Phaser.Math.Between(2000,4000));});
+            });
+        } else if(key==='dash'){
+            const goRight=Math.random()>0.5;
+            agnes.setFlipX(goRight);agnesVX=goRight?160:-160;moveMode='dash';agnes.play('dash');
+            scene.time.delayedCall(Phaser.Math.Between(1000,2000),()=>{
+                if(isInterrupted||moveMode!=='dash')return;
+                stopMoving();const backRight=agnes.x<HOME_X;
+                agnes.setFlipX(backRight);agnesVX=backRight?140:-140;moveMode='dash_return';agnes.play('dash');
+            });
+        } else if(key==='super_dash'){
+            const goRight=Math.random()>0.5;
+            agnes.setFlipX(goRight);agnesVX=goRight?220:-220;moveMode='superdash';agnes.play('super_dash');
+        } else if(key==='float'){
+            floatAngle=Math.random()*Math.PI*2;moveMode='float';agnes.play('float');
+            scene.time.delayedCall(Phaser.Math.Between(5000,9000),()=>{
+                if(isInterrupted||moveMode!=='float')return;
+                stopMoving();walkHome(()=>{if(isInterrupted)return;parkIdle();scheduleNext(Phaser.Math.Between(3000,6000));});
+            });
+        } else if(key==='idle1'){
+            agnes.setPosition(HOME_X,HOME_Y);agnes.setFlipX(false);agnes.play('idle1');
+            scheduleNext(Phaser.Math.Between(4000,8000));
+        } else {
+            agnes.setFlipX(false);agnes.play(key);
+        }
+    };
+
+    agnes.on('animationcomplete',(anim)=>{
+        if(isInterrupted)return;
+        if(anim.key==='super_dash'){
+            stopMoving();walkHome(()=>{if(isInterrupted)return;parkIdle();scheduleNext(Phaser.Math.Between(3000,6000));});
+        } else if(anim.key==='sudden_stop'){
+            parkIdle();scheduleNext(Phaser.Math.Between(3000,6000));
+        } else if(anim.key==='say'){
+            parkIdle();scheduleNext(Phaser.Math.Between(2000,4000));
+        } else if(anim.key==='sit_down'){
+            parkIdle();scheduleNext(Phaser.Math.Between(3000,6000));
+        } else if(anim.key==='walk_left'||anim.key==='dash'||anim.key==='idle1'){
+            // looping
+        } else {
+            parkIdle();scheduleNext(Phaser.Math.Between(3000,6000));
+        }
+    });
+
+    agnes.on('pointerdown',()=>{
+        cancelCurrent();scene._walkHomeCallback=null;
+        stopMoving();parkIdle();agnes.setPosition(HOME_X,HOME_Y);
+        say('Hi! Don\'t forget your tasks today! 🌸');
+        scheduleNext(3000);
+    });
+
+    scheduleNext(1000);
+
+    scene.events.on('update',(time,delta)=>{
+        if(!agnes)return;
+        const dt=delta/1000;
+        if(moveMode==='float'){
+            floatAngle+=delta*0.0008;
+            agnes.x=HOME_X+Math.sin(floatAngle*1.3)*70+Math.sin(floatAngle*2.7)*20;
+            agnes.y=HOME_Y+Math.sin(floatAngle*0.9)*18+Math.sin(floatAngle*2.1)*8;
+            return;
+        }
+        if(agnesVX===0&&agnesVY===0)return;
+        agnes.x+=agnesVX*dt; agnes.y+=agnesVY*dt;
+        if(moveMode==='returning'&&scene._walkHomeCallback){
+            const arrived=(agnesVX>0&&agnes.x>=HOME_X)||(agnesVX<0&&agnes.x<=HOME_X);
+            if(arrived){agnes.x=HOME_X;agnes.y=HOME_Y;const cb=scene._walkHomeCallback;scene._walkHomeCallback=null;stopMoving();cb();return;}
+        }
+        if(moveMode==='dash_return'){
+            const arrived=(agnesVX>0&&agnes.x>=HOME_X)||(agnesVX<0&&agnes.x<=HOME_X);
+            if(arrived){agnes.x=HOME_X;parkIdle();scheduleNext(Phaser.Math.Between(2000,4000));return;}
+        }
+        const hitLeft=agnes.x<WALL_L, hitRight=agnes.x>WALL_R;
+        if(moveMode==='walk'&&(hitLeft||hitRight)&&!wallBouncing){wallBouncing=true;agnesVX*=-1;agnes.setFlipX(agnesVX>0);}
+        else if(moveMode==='dash'&&(hitLeft||hitRight)&&!wallBouncing){wallBouncing=true;parkIdle();scheduleNext(Phaser.Math.Between(2000,4000));}
+        else if(moveMode==='dash_return'&&(hitLeft||hitRight)){parkIdle();scheduleNext(Phaser.Math.Between(2000,4000));}
+        else if(moveMode==='superdash'&&(agnes.x<SDASH_L||agnes.x>SDASH_R)){agnesVX=0;agnesVY=0;moveMode='none';}
+    });
+}
+</script>
+</body>
+</html>
