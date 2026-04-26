@@ -241,8 +241,7 @@ const TASK_SPRITES = {
     Lunch:     { atlas: 'snack',    frame: '92_sandwich' },
     Snack:     { atlas: 'snack',    frame: '28_cookies' },
     Snack2:    { atlas: 'snack',    frame: '50_giantgummybear' },     // fun/energy
-    Read:      { atlas: 'snack',    frame: '26_chocolate' },          // cosy treat
-    Cranes:    { atlas: 'snack',    frame: '52_gingerbreadman' },     // crafty/cute
+    Snack3:      { atlas: 'snack',    frame: '26_chocolate' },          // cosy treat
     Dinner:    { atlas: 'snack',    frame: '87_ramen' },
     Dinner2:   { atlas: 'snack',    frame: '96_steak_dish' },        // energy food
     Teeth:     { atlas: 'tooth',    frame: 'toothpaste' },
@@ -264,6 +263,26 @@ const EMOTE = {
     idea:      'pipo-popupemotes009',  // lightbulb    — new task
 };
 
+// Add this near your TASK_SPRITES definition
+const TASK_REMINDERS = {
+    Stretch:   "Time to wake up and warm up!",
+    Breakfast: "Don't forget to eat something yummy!",
+    Tablet:    "Time for your medicine, I need healthy test subjects!",
+    Water:     "Stay hydrated! Take a sip. 💧",
+    Lunch:     "Lunch time! Feed your brain. ",
+    Snack:     "A small treat for your hard work!",
+    Walk:      "Let's get some fresh air. ",
+    Read:      "Time for some quiet reading. 📚",
+    Cranes:    "Folding paper cranes is so relaxing... 🦢",
+    Dinner:    "What's on the menu tonight?",
+    Teeth:     "Brush those teeth! ✨",
+    Tidy:      "A little tidy-up makes a happy space. 🧹",
+    Tidy2:     "Cleaning time! ✨",
+    Shop:      "Time to go shopping! 🛒",
+    Laundry:   "Don't forget the laundry! 🧺",
+    Injection: "Time for your injection. You've got this! 🧪"
+};
+    
 // ─────────────────────────────────────────────────────────────────────────────
 // SUPABASE
 // ─────────────────────────────────────────────────────────────────────────────
@@ -699,7 +718,7 @@ function renderCustomTasks() {
 // ─────────────────────────────────────────────────────────────────────────────
 // NAG SYSTEM
 // ─────────────────────────────────────────────────────────────────────────────
-const INJECTION_NAGS=["I NEEDS this data on time!! Please do the injection! 🔬","Late injection data skews the whole experiment... 😤 Please do it soon!","This is for SCIENCE. Timely data is good data!! 🧪","Tachyon is not impressed. The injection window was 3PM–5PM! 😤","The research won't wait forever... please do the injection! 🌸"];
+const INJECTION_NAGS=["I NEED this data on time!! Please do the injection! 🔬","Late injection data skews the whole experiment... 😤 Please do it soon!","This is for SCIENCE. Timely data is good data!! 🧪","Tachyon is not impressed. The injection window was 3PM–5PM! 😤","The research won't wait forever... please do the injection! 🌸"];
 const TABLET_NAGS=["Have you taken your tablet yet today? It's important! 💊","The tablet needs to be taken before 12PM — please don't forget! 🌸","I'm watching the tablet situation closely... 😤 Please take it!","Your health matters! Please take your experimental tablet! 💊"];
 let injNagIdx=0,tabNagIdx=0,injNagInterval=null,tabNagInterval=null,_naggingInj=false,_naggingTab=false;
 
@@ -834,7 +853,7 @@ function updateUI() {
 // ─────────────────────────────────────────────────────────────────────────────
 const RANK_UP_MSGS={power:"Tachyon feels Stronger! 💪",stamina:"Tachyon has more energy! ✨",guts:"Tachyon is tougher now! 🔥",wit:"Tachyon feels Smarter! 📚"};
 const INJ_ONTIME=["Ehehe~ more data for me! 🧪✨","Perfect timing! Tachyon's data is looking great! 🔬🌸","Excellent! Right on schedule — just how Tachyon likes it! 🧪"];
-const INJ_LATE=["Tachyon is not impressed... late data skews the results! Please be on time next time! 😤","Better late than never, but Tachyon needs timely data! 😤 Do try harder!","The experiment requires precision! Please take the injection on time next fortnight! 😤"];
+const INJ_LATE=["Tachyon is not impressed... late data skews the results! Please be on time next time! 😤","Better late than never, but Tachyon needs timely data! 😤 Do try harder!","The experiment requires precision! Please take the injection on time! 😤"];
 const TAB_ONTIME=["Great! Tablet taken on time — Tachyon approves! 💊🌸","Well done taking your tablet! Health first! 💊✨","Tablet done! Tachyon is pleased with your punctuality! 💊"];
 const TAB_LATE=["You were late with your tablet today... please take it before noon next time! 😤","Tachyon is a little disappointed about the tablet timing... health is important! 😤💊","Better late than never for the tablet, but please try to take it before 12PM! 💊"];
 function randFrom(arr){return arr[Math.floor(Math.random()*arr.length)];}
