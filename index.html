@@ -521,7 +521,7 @@ const coreTasks = [
     {id:'Tidy',      name:'Tidy Up Room',                 type:'power',   anim:'float',      timeLabel:'Wed & Sun',   isEssential:false, days:[0,3], check:h=>h<18},
     {id:'Tidy2',     name:'Scrub The Bathroom',           type:'power',   anim:'dash',       timeLabel:'Sun & Wed',   isEssential:false, days:[0,3], check:h=>h<18},
     {id:'Shop',      name:'Go Food Shopping With Tachyon',type:'power',   anim:'dash',       timeLabel:'Saturdays',   isEssential:false, days:[6],   check:h=>h<20},
-    {id:'Laundry',   name:'Do Laundry With Tachyon',      type:'guts',    anim:'dash',       timeLabel:'Sundays',     isEssential:false, days:[0],   check:h=>h<18},
+    {id:'Laundry',   name:'Do Laundry With Tachyon',      type:'power',    anim:'dash',       timeLabel:'Sundays',     isEssential:false, days:[0],   check:h=>h<18},
     {id:'Injection', name:"Tachyon's Newest Injection",   type:'guts',    anim:'giggle',     timeLabel:'3PM – 5PM',   isEssential:true,  isInjection:true, check:h=>isInjectionFriday()&&h>=15},
 ];
 
@@ -699,12 +699,49 @@ function renderCustomTasks() {
 // ─────────────────────────────────────────────────────────────────────────────
 // NAG SYSTEM
 // ─────────────────────────────────────────────────────────────────────────────
-const INJECTION_NAGS=["Tachyon NEEDS this data on time!! Please do the injection! 🔬","Late injection data skews the whole experiment... 😤 Please do it soon!","This is for SCIENCE. Timely data is good data!! 🧪","Tachyon is not impressed. The injection window was 3PM–5PM! 😤","The research won't wait forever... please do the injection! 🌸"];
-const TABLET_NAGS=["Have you taken your tablet yet today? It's important! 💊","The tablet needs to be taken before 12PM — please don't forget! 🌸","Tachyon is watching the tablet situation closely... 😤 Please take it!","Your health matters! Please take your experimental tablet! 💊"];
+const INJECTION_NAGS=["I NEEDS this data on time!! Please do the injection! 🔬","Late injection data skews the whole experiment... 😤 Please do it soon!","This is for SCIENCE. Timely data is good data!! 🧪","Tachyon is not impressed. The injection window was 3PM–5PM! 😤","The research won't wait forever... please do the injection! 🌸"];
+const TABLET_NAGS=["Have you taken your tablet yet today? It's important! 💊","The tablet needs to be taken before 12PM — please don't forget! 🌸","I'm watching the tablet situation closely... 😤 Please take it!","Your health matters! Please take your experimental tablet! 💊"];
 let injNagIdx=0,tabNagIdx=0,injNagInterval=null,tabNagInterval=null,_naggingInj=false,_naggingTab=false;
-function startInjNag(){if(injNagInterval)return;setStatus(INJECTION_NAGS[injNagIdx++%INJECTION_NAGS.length],7000);showEmoteAndItem('Injection',EMOTE.urgent,null);injNagInterval=setInterval(()=>{setStatus(INJECTION_NAGS[injNagIdx++%INJECTION_NAGS.length],7000);showEmoteAndItem('Injection',EMOTE.anger,null);},90000);}
+
+// Helper to check if a task is currently in the checklist
+function isTaskActive(name) {
+    return Array.from(document.querySelectorAll('.task-name')).some(el => el.textContent.includes(name));
+}
+
+function startInjNag(){
+    if(injNagInterval) return;
+    
+    // Start monitoring interval
+    injNagInterval=setInterval(()=>{
+        if(!isTaskActive('Injection')) return;
+        setStatus(INJECTION_NAGS[injNagIdx++%INJECTION_NAGS.length],7000);
+        showEmoteAndItem('Injection',EMOTE.anger,null);
+    },90000);
+    
+    // Trigger immediate nag if active
+    if(isTaskActive('Injection')) {
+        setStatus(INJECTION_NAGS[injNagIdx++%INJECTION_NAGS.length],7000);
+        showEmoteAndItem('Injection',EMOTE.urgent,null);
+    }
+}
 function stopInjNag(){clearInterval(injNagInterval);injNagInterval=null;}
-function startTabNag(){if(tabNagInterval)return;setStatus(TABLET_NAGS[tabNagIdx++%TABLET_NAGS.length],7000);showEmoteAndItem('Tablet',EMOTE.urgent,null);tabNagInterval=setInterval(()=>{setStatus(TABLET_NAGS[tabNagIdx++%TABLET_NAGS.length],7000);showEmoteAndItem('Tablet',EMOTE.anger,null);},90000);}
+
+function startTabNag(){
+    if(tabNagInterval)return;
+    
+    // Start monitoring interval
+    tabNagInterval=setInterval(()=>{
+        if(!isTaskActive('Tablet')) return;
+        setStatus(TABLET_NAGS[tabNagIdx++%TABLET_NAGS.length],7000);
+        showEmoteAndItem('Tablet',EMOTE.anger,null);
+    },90000);
+    
+    // Trigger immediate nag if active
+    if(isTaskActive('Tablet')) {
+        setStatus(TABLET_NAGS[tabNagIdx++%TABLET_NAGS.length],7000);
+        showEmoteAndItem('Tablet',EMOTE.urgent,null);
+    }
+}
 function stopTabNag(){clearInterval(tabNagInterval);tabNagInterval=null;}
 
 // ─────────────────────────────────────────────────────────────────────────────
